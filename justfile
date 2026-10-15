@@ -43,6 +43,7 @@ prep:
 # Compile the city to WebAssembly into web/pkg
 wasm: _wasm-target _wasm-bindgen
     {{ wasm_env }} cargo build -q -p overrules-city --profile wasm-release --target {{ wasm_target }}
+    rm -rf web/pkg
     wasm-bindgen --target web --no-typescript --out-dir web/pkg \
         target/{{ wasm_target }}/wasm-release/overrules_city.wasm
 
@@ -71,6 +72,14 @@ vendor:
     rm -rf "$tmp"
     echo "maplibre-gl {{ maplibre }} and fonts → web/vendor"
 
+# Assemble the static site in dist/, ready for any web server
+site: wasm
+    @test -f web/data/area.geojson || just prep
+    @test -f web/vendor/fonts.css || just vendor
+    rm -rf dist && mkdir -p dist
+    cp -R web/index.html web/app.js web/style.css web/pkg web/vendor web/data dist/
+    @echo; du -sh dist dist/*
+
 # ─── check ───────────────────────────────────────────────────────────────────
 
 # Native tests: the city runs, the game rules hold, the tour tells the truth
@@ -87,7 +96,7 @@ check: _wasm-target
 # Remove build outputs (keeps the downloaded data)
 clean:
     cargo clean
-    rm -rf web/pkg web/data web/vendor
+    rm -rf web/pkg web/data web/vendor dist
 
 _wasm-target:
     rustup target list --installed | grep -q '^{{ wasm_target }}$' || rustup target add {{ wasm_target }}

@@ -3,6 +3,7 @@
 /web/pkg
 /web/data
 /web/vendor
+/dist
 /research_notes
 /reports
 .DS_Store
