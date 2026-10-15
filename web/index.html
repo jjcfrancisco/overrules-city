@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>overrules · a live city that follows the rules</title>
+  <meta name="description" content="A live Lower Manhattan where every car, van, lorry, bike and pedestrian follows Overture's real transport rules, evaluated in your browser by overrules.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230b0b0d'/><text x='50' y='70' font-size='62' font-family='Big Shoulders Display,sans-serif' font-weight='900' fill='%23ffc400' text-anchor='middle'>O</text></svg>">
+  <link rel="stylesheet" href="vendor/fonts.css">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/maplibre-gl.js"></script>
+</head>
+<body>
+  <div id="map"></div>
+
+  <nav class="nav">
+    <span class="brand">OVERRULES</span>
+    <span class="nav-sub">LIVE CITY · LOWER MANHATTAN</span>
+    <button type="button" data-mode="tour" class="active">TOUR</button>
+    <button type="button" data-mode="explore">EXPLORE</button>
+    <button type="button" data-mode="about">ABOUT</button>
+    <span class="spacer"></span>
+    <span class="clock"><span id="clock-day">MON</span> <span id="clock-time" class="accent">08:00</span></span>
+    <span class="group" id="speeds">
+      <button type="button" data-speed="0">PAUSE</button><span class="dash">·</span>
+      <button type="button" data-speed="1">1×</button><span class="dash">·</span>
+      <button type="button" data-speed="5" class="active">5×</button><span class="dash">·</span>
+      <button type="button" data-speed="20">20×</button>
+    </span>
+    <span class="group" id="presets">
+      <button type="button" data-time="2026-10-19T08:00">MON 08:00</button><span class="dash">·</span>
+      <button type="button" data-time="2026-10-23T17:30">FRI 17:30</button><span class="dash">·</span>
+      <button type="button" data-time="2026-10-25T03:00">SUN 03:00</button>
+    </span>
+    <span class="group theme">
+      <button type="button" data-theme="day">DAY</button><span class="dash">·</span>
+      <button type="button" data-theme="night" class="active">NIGHT</button>
+    </span>
+  </nav>
+
+  <!-- left: the tour, or what you clicked -->
+  <aside class="panel" id="left">
+    <div id="left-body">
+      <div class="kicker">LOADING</div>
+      <h2 class="scene">A LIVE CITY<br><span class="accent">THAT FOLLOWS THE RULES.</span></h2>
+      <p id="loading">Loading 11,846 roads and the people on them…</p>
+    </div>
+    <div class="tour-controls" id="tour-controls">
+      <span id="tour-step" class="mute">01 / 10</span>
+      <span class="spacer"></span>
+      <button type="button" id="prev">← PREV</button><span class="dash">·</span>
+      <button type="button" id="play">PAUSE</button><span class="dash">·</span>
+      <button type="button" id="next">NEXT →</button>
+    </div>
+  </aside>
+
+  <!-- right: under the hood -->
+  <aside class="panel" id="hood">
+    <div class="kicker"><span class="accent">LIVE</span><span class="dash">·</span><span>UNDER THE HOOD</span></div>
+    <div class="ticker">
+      <div class="tk"><div class="eyebrow">RULES EVALUATED / S</div><div class="value accent" id="m-rate">0</div></div>
+      <div class="tk"><div class="eyebrow">JUNCTION DECISIONS</div><div class="value" id="m-decisions">0</div></div>
+      <div class="tk"><div class="eyebrow">MOVES REFUSED</div><div class="value" id="m-refusals">0</div></div>
+    </div>
+    <div class="kicker feed-kicker">WHAT THE RULES SAID NO TO</div>
+    <ul id="feed"></ul>
+  </aside>
+
+  <div class="legend" id="legend">
+    <span><i class="sw oneway"></i>ONE-WAY</span>
+    <span><i class="sw closed"></i>NO ENTRY</span>
+    <span><i class="sw timed"></i>DEPENDS ON TIME</span>
+    <span><i class="sw unsure"></i>CAN'T BE SURE</span>
+    <span><b class="accent">×</b>BANNED TURN</span>
+    <span class="sep">·</span>
+    <span><i class="dot car"></i>CAR</span>
+    <span><i class="dot van"></i>VAN</span>
+    <span><i class="dot lorry"></i>LORRY</span>
+    <span><i class="dot bicycle"></i>BIKE</span>
+    <span><i class="dot foot"></i>ON FOOT</span>
+    <span class="sep">·</span>
+    <span>SIGNS FOR
+      <select id="viewer">
+        <option value="car">CARS</option>
+        <option value="van">VANS</option>
+        <option value="lorry">LORRIES</option>
+        <option value="bicycle">BIKES</option>
+        <option value="foot">PEDESTRIANS</option>
+      </select>
+    </span>
+  </div>
+
+  <footer class="credit">OVERRULES · RUST → WEBASSEMBLY · OVERTURE 2026-09-23.1 · ROADS © OPENSTREETMAP CONTRIBUTORS, OVERTURE MAPS FOUNDATION (ODBL) · TILES OPENFREEMAP</footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

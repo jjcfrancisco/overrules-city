@@ -1,0 +1,8 @@
+/target
+/data/*.parquet
+/web/pkg
+/web/data
+/web/vendor
+/research_notes
+/reports
+.DS_Store
