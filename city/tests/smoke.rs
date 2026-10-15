@@ -15,11 +15,14 @@ use overrules_city::sim::Sim;
 use serde_json::Value;
 
 fn world() -> Option<World> {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../web/data/area.geojson");
-    let Ok(text) = std::fs::read_to_string(path) else {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../web/data/area.json.gz");
+    let Ok(file) = std::fs::File::open(path) else {
         eprintln!("skipping: {path} not built (run `just prep`)");
         return None;
     };
+    let mut text = String::new();
+    std::io::Read::read_to_string(&mut flate2::read::GzDecoder::new(file), &mut text)
+        .expect("gzipped GeoJSON");
     Some(World::from_geojson(&text).expect("the play area reads"))
 }
 

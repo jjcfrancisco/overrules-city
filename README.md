@@ -47,7 +47,7 @@ That runs, as needed:
 
 ```sh
 just data    # Lower Manhattan's segments from Overture's S3 bucket → data/segment.parquet
-just prep    # → web/data/area.geojson, the file the page loads
+just prep    # → web/data/area.json.gz, the gzipped GeoJSON the page loads (1.5 MB)
 just vendor  # MapLibre GL JS and the fonts → web/vendor
 just wasm    # the city, compiled to WebAssembly → web/pkg
 ```

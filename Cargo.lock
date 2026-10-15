@@ -622,6 +622,7 @@ name = "overrules-city"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "flate2",
  "geo",
  "overrules",
  "serde",
@@ -633,6 +634,7 @@ dependencies = [
 name = "overrules-city-prep"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "geo",
  "overrules",
  "serde_json",

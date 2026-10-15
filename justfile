@@ -22,7 +22,7 @@ wasm_env := if llvm_ar != '' { 'AR_wasm32_unknown_unknown=' + llvm_ar } else { '
 
 # Build everything that's missing and serve at http://localhost:<port>
 play port='8790': wasm
-    @test -f web/data/area.geojson || just prep
+    @test -f web/data/area.json.gz || just prep
     @test -f web/vendor/fonts.css || just vendor
     @echo "→ http://localhost:{{ port }}"
     python3 -m http.server -d web {{ port }}
@@ -34,11 +34,12 @@ data:
     mkdir -p data
     duckdb < data/extract.sql
 
-# Turn the segments into the GeoJSON the page loads (web/data/area.geojson)
+# Turn the segments into the gzipped GeoJSON the page loads (web/data/area.json.gz)
 prep:
     @test -f data/segment.parquet || just data
     mkdir -p web/data
-    cargo run --release -q -p overrules-city-prep -- data/segment.parquet web/data/area.geojson {{ bbox }}
+    rm -f web/data/area.geojson
+    cargo run --release -q -p overrules-city-prep -- data/segment.parquet web/data/area.json.gz {{ bbox }}
 
 # Compile the city to WebAssembly into web/pkg
 wasm: _wasm-target _wasm-bindgen
@@ -74,7 +75,7 @@ vendor:
 
 # Assemble the static site in dist/, ready for any web server
 site: wasm
-    @test -f web/data/area.geojson || just prep
+    @test -f web/data/area.json.gz || just prep
     @test -f web/vendor/fonts.css || just vendor
     rm -rf dist && mkdir -p dist
     cp -R web/index.html web/app.js web/style.css web/pkg web/vendor web/data dist/

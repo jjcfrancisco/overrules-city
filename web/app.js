@@ -620,7 +620,15 @@ document.addEventListener('keydown', (e) => {
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 
-const [, text] = await Promise.all([init(), fetch('data/area.geojson').then((r) => r.text())]);
+/** The play area: gzipped GeoJSON, unpacked here unless the server already did. */
+async function loadArea() {
+  const bytes = new Uint8Array(await (await fetch('data/area.json.gz')).arrayBuffer());
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(stream).text();
+}
+
+const [, text] = await Promise.all([init(), loadArea()]);
 city = new City(text, START, Math.floor(Math.random() * 2 ** 32));
 const raw = JSON.parse(text);
 const roads = { type: 'FeatureCollection', features: raw.features.map((f) => ({ type: 'Feature', geometry: f.geometry, properties: { id: f.properties.id } })) };
