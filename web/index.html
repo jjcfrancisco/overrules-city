@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="night">
+<html lang="en" data-theme="day">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,6 +9,15 @@
   <link rel="stylesheet" href="vendor/fonts.css">
   <link rel="stylesheet" href="vendor/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Your saved choice, else the time where you are: day from 07:00 to 19:00.
+    (() => {
+      let t = null;
+      try { t = localStorage.getItem('theme'); } catch {}
+      if (t !== 'day' && t !== 'night') { const h = new Date().getHours(); t = h >= 7 && h < 19 ? 'day' : 'night'; }
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <script src="vendor/maplibre-gl.js"></script>
 </head>
 <body>
@@ -35,7 +44,7 @@
     </span>
     <span class="group theme">
       <button type="button" data-theme="day">DAY</button><span class="dash">·</span>
-      <button type="button" data-theme="night" class="active">NIGHT</button>
+      <button type="button" data-theme="night">NIGHT</button>
     </span>
   </nav>
 

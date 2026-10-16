@@ -18,7 +18,7 @@ const START = '2026-10-19T08:00';
 
 let city;
 let speed = 5;
-let theme = 'night';
+let theme = document.documentElement.dataset.theme === 'night' ? 'night' : 'day';
 let mode = 'tour';          // tour | explore | about
 let agentsBuf = [];
 let lastFeed = 0;
@@ -604,7 +604,10 @@ function setSpeed(s) {
 
 document.querySelectorAll('#speeds button').forEach((b) => b.addEventListener('click', () => setSpeed(Number(b.dataset.speed))));
 document.querySelectorAll('#presets button').forEach((b) => b.addEventListener('click', () => { city.set_time(b.dataset.time); signsBucket = ''; }));
-document.querySelectorAll('.theme button').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.theme)));
+document.querySelectorAll('.theme button').forEach((b) => b.addEventListener('click', () => {
+  setTheme(b.dataset.theme);
+  try { localStorage.setItem('theme', b.dataset.theme); } catch { /* private mode */ }
+}));
 document.querySelectorAll('.nav [data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
 $('prev').addEventListener('click', () => runScene(sceneIdx - 1));
 $('next').addEventListener('click', () => runScene(sceneIdx + 1));
@@ -634,7 +637,7 @@ const raw = JSON.parse(text);
 const roads = { type: 'FeatureCollection', features: raw.features.map((f) => ({ type: 'Feature', geometry: f.geometry, properties: { id: f.properties.id } })) };
 await mapLoaded;
 addLayers(roads);
-setTheme('night');
+setTheme(theme);
 refreshSigns();
 requestAnimationFrame(loop);
 // #03 opens the third scene, so scenes can be linked to.
