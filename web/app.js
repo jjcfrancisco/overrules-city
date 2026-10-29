@@ -240,18 +240,21 @@ const agentKind = (i) => agentsBuf[i * 4 + 2] ?? 0;
 
 // ─── what overrules said, rule by rule ──────────────────────────────────────
 
-/** One answer from `ask` or `inspect`, as rows: every rule, which decides, and the result. */
-function answerHtml(a, opts = {}) {
-  const acc = a.access;
-  const rows = acc.rules.map((x) => {
+function ruleRowsHtml(rules, opts = {}, kind = 'RULE') {
+  return rules.map((x) => {
     const state = x.decided ? 'decides' : x.overridden ? 'overridden' : x.verdict;
     const label = x.decided ? 'DECIDES' : x.overridden ? 'MATCHED · LATER RULE WINS' : x.verdict === 'match' ? 'MATCHES' : x.verdict === 'undetermined' ? "CAN'T TELL" : "DOESN'T APPLY";
     const why = (opts.why ? x.scopes : x.scopes.filter((c) => c.because.includes('(read "'))).map((c) => {
       const hit = c.because.includes('(read "') || (opts.why && c.verdict !== 'no_match');
       return `<div class="why ${hit ? 'hit' : ''}">${{ match: '✓', no_match: '✗', undetermined: '?' }[c.verdict]} ${esc(c.scope)} ${esc(c.requires)}: ${esc(c.because)}</div>`;
     }).join('');
-    return `<div class="r ${state}"><span class="k">RULE #${x.index}</span><span class="t">${esc(x.plain)}</span><span class="v">${label}</span>${why}</div>`;
-  });
+    return `<div class="r ${state}"><span class="k">${kind} #${x.index}</span><span class="t">${esc(x.plain)}</span><span class="v">${label}</span>${why}</div>`;
+  }).join('');
+}
+
+/** One answer from `ask` or `inspect`, as rows: every rule, which decides, and the result. */
+function answerHtml(a, opts = {}) {
+  const acc = a.access;
   const decided = acc.rules.find((x) => x.decided);
   const unsure = !acc.settled;
   const cls = unsure ? 'unsure' : acc.outcome === 'denied' ? 'no' : '';
@@ -262,8 +265,19 @@ function answerHtml(a, opts = {}) {
       : decided ? `Rule #${decided.index} of ${acc.rules.length} is the last one that matches.` : '';
   return `<div class="answer">
     <div class="r"><span class="k">ASKING</span><span class="t">${up(a.who.replace(/^\S+\s/, ''))} · ${up(a.when.replace(/(\d\d:\d\d):\d\d$/, '$1'))} · ${up(a.heading)}${opts.claim ? ` · ${up(opts.claim)}` : ''}</span><span class="v"></span></div>
-    ${rows.join('')}
+    ${ruleRowsHtml(acc.rules, opts)}
     <div class="final"><span class="k">ANSWER</span><span class="big ${cls}">${result}</span><span class="note">${esc(note)}</span></div>
+  </div>`;
+}
+
+function speedHtml(a) {
+  const s = a.speed;
+  const result = !s.settled ? "CAN'T BE SURE" : s.rule ?? 'NO RULE SAYS';
+  const note = !s.settled ? 'A missing fact could change the speed limit.'
+    : s.rule ? 'The last matching speed rule decides.' : 'No speed rule matched. The city uses its game default.';
+  return `<div class="kicker" style="margin-top:18px">SPEED LIMIT</div><div class="answer">
+    ${ruleRowsHtml(s.rules, { why: true }, 'SPEED')}
+    <div class="final"><span class="k">ANSWER</span><span class="big ${s.settled ? '' : 'unsure'}">${esc(result)}</span><span class="note">${note}</span></div>
   </div>`;
 }
 
@@ -272,7 +286,7 @@ function turnsHtml(a) {
   return `<div class="answer">
     <div class="r"><span class="k">ASKING</span><span class="t">${up(a.who.replace(/^\S+\s/, ''))} · ${up(a.when.replace(/(\d\d:\d\d):\d\d$/, '$1'))} · ${up(a.heading)}</span><span class="v"></span></div>
     ${t.rules.map((x) => `<div class="r ${x.decided ? 'decides' : x.verdict}"><span class="k">TURN #${x.index}</span><span class="t">${esc(x.plain)}</span><span class="v">${x.decided ? 'IN FORCE' : x.verdict === 'undetermined' ? "CAN'T TELL" : "DOESN'T APPLY"}</span></div>`).join('')}
-    <div class="final"><span class="k">ANSWER</span><span class="big no">${t.in_force.length} BANNED</span><span class="note">For banned turns every matching rule applies, not just the last one.</span></div>
+    <div class="final"><span class="k">ANSWER</span><span class="big ${t.could_apply.length ? 'unsure' : t.in_force.length ? 'no' : ''}">${t.in_force.length} BANNED${t.could_apply.length ? ` · ${t.could_apply.length} POSSIBLE` : ''}</span><span class="note">For banned turns every matching rule applies, not just the last one.${t.could_apply.length ? ' A missing fact could activate more bans.' : ''}</span></div>
   </div>`;
 }
 
@@ -353,6 +367,7 @@ const SCENES = [
       c.focus(E14[0]);
       c.fly(E14[1], 17.2, -60, 50);
       for (const m of ['21:57', '21:58', '21:59', '22:00', '22:01']) {
+        c.time(`2026-10-19T${m}`);
         c.show(answerHtml(c.ask(E14, ROW.car, `2026-10-19T${m}`)));
         await c.sleep(m === '21:59' || m === '22:00' ? 3200 : 1800);
       }
@@ -479,8 +494,9 @@ function setProgress(f) { const i = $('progress-bar'); if (i) i.style.width = `$
 
 async function runScene(i) {
   const my = ++token;
-  sceneIdx = (i + SCENES.length) % SCENES.length;
+  sceneIdx = Number.isInteger(i) ? ((i % SCENES.length) + SCENES.length) % SCENES.length : 0;
   const s = SCENES[sceneIdx];
+  road = null;
   followAgent = null;
   $('left').dataset.agent = '';
   $('left-body').innerHTML = `
@@ -509,6 +525,8 @@ function setPlaying(p) {
 function setMode(m) {
   if (m === mode && m !== 'tour') return;
   mode = m;
+  road = null;
+  followAgent = null;
   document.querySelectorAll('.nav [data-mode]').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
   $('tour-controls').classList.toggle('hidden', m !== 'tour');
   if (m === 'tour') { setPlaying(true); runScene(sceneIdx); return; }
@@ -525,6 +543,7 @@ function setMode(m) {
 
 function showAgent(i, fresh = true) {
   const a = JSON.parse(city.agent(i));
+  road = null;
   if (fresh) followAgent = null;
   const d = a.decision;
   $('left').dataset.agent = i;
@@ -561,7 +580,7 @@ function showRoad(id, ll, cell = null, fresh = true) {
   const heading = (h) => {
     const view = { ...h, who: r.who, when: r.when, heading: h.heading };
     const game = h.game && h.game.game_rule ? `<p style="margin:8px 0 0"><span class="by game">GAME RULE</span> ${esc(h.game.headline)}. ${esc((h.game.note ?? '').replace(/^Game rule: /, ''))}</p>` : '';
-    return `<div class="kicker" style="margin-top:18px">TRAVELLING ${up(h.heading)} ${h.heading === 'forward' ? '→' : '←'}</div>${answerHtml(view)}${game}`;
+    return `<div class="kicker" style="margin-top:18px">TRAVELLING ${up(h.heading)} ${h.heading === 'forward' ? '→' : '←'}</div>${answerHtml(view, { why: true })}${game}${speedHtml(view)}<div class="kicker" style="margin-top:18px">BANNED TURNS</div>${turnsHtml(view)}`;
   };
   $('left-body').innerHTML = `
     <div class="kicker"><span class="accent">ROAD</span><span class="dash">·</span><span>${up(r.class)}${r.subclass ? ' / ' + up(r.subclass) : ''} · ${Math.round(r.length_m)} M · CHECKED ${Math.round(r.at * 100)}% ALONG</span></div>
@@ -642,5 +661,5 @@ refreshSigns();
 requestAnimationFrame(loop);
 // #03 opens the third scene, so scenes can be linked to.
 const linked = Number(location.hash.slice(1));
-runScene(linked >= 1 && linked <= SCENES.length ? linked - 1 : 0);
+runScene(Number.isInteger(linked) && linked >= 1 && linked <= SCENES.length ? linked - 1 : 0);
 window.__city = { map, city, runScene, showRoad, showAgent, get scene() { return sceneIdx; } };

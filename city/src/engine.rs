@@ -892,7 +892,8 @@ impl Traveller {
         }
     }
 
-    /// Access and speed on one edge at a time, checking access at fractions of the edge.
+    /// Access and speed on one edge. Supplement the usual samples with every interval
+    /// between access-rule boundaries, so short closures cannot fall between samples.
     pub fn edge_eval(
         &self,
         world: &World,
@@ -907,8 +908,24 @@ impl Traveller {
             off_limits: false,
         };
         let mut first_reason = None;
-        for &f in samples {
-            let at = e.from_at + f * (e.to_at - e.from_at);
+        let (lo, hi) = (e.from_at.min(e.to_at), e.from_at.max(e.to_at));
+        let mut bounds: Vec<f64> = seg
+            .access_restrictions
+            .iter()
+            .filter_map(|r| r.between)
+            .flat_map(|b| [b.start, b.end])
+            .filter(|&at| at > lo && at < hi)
+            .collect();
+        if !bounds.is_empty() {
+            bounds.extend([lo, hi]);
+            bounds.sort_by(f64::total_cmp);
+            bounds.dedup();
+        }
+        let points = samples
+            .iter()
+            .map(|&f| e.from_at + f * (e.to_at - e.from_at))
+            .chain(bounds.windows(2).map(|b| f64::midpoint(b[0], b[1])));
+        for at in points {
             let v = self.access_at(world, seg, at, e.heading, t);
             if first_reason.is_none() {
                 first_reason.clone_from(&v.reason);

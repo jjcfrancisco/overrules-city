@@ -6,12 +6,16 @@ use overrules::Heading;
 use overrules::eval::{Verdict, evaluate};
 use serde_json::{Value, json};
 
-use crate::engine::{Status, Traveller, World, default_denied, name_of};
+use crate::engine::{Status, Traveller, World, name_of};
 
 pub fn signs(world: &World, tr: &Traveller, clock: NaiveDateTime) -> Value {
     let mut features = Vec::new();
     for seg in world.net.segments() {
-        if default_denied(tr.vehicle, seg).is_some() {
+        let fwd = tr.access_at(world, seg, 0.5, Heading::Forward, clock);
+        let bwd = tr.access_at(world, seg, 0.5, Heading::Backward, clock);
+        // Hide roads excluded only by the game's defaults. Explicit access rules
+        // can still make a pedestrian street usable by bikes, for example.
+        if fwd.off_limits && bwd.off_limits {
             continue;
         }
         let timed = seg
@@ -19,8 +23,7 @@ pub fn signs(world: &World, tr: &Traveller, clock: NaiveDateTime) -> Value {
             .iter()
             .any(|r| r.when.as_ref().is_some_and(|w| w.during.is_some()));
         if !seg.access_restrictions.is_empty() {
-            let ask = |h| tr.access_at(world, seg, 0.5, h, clock).status;
-            let (fwd, bwd) = (ask(Heading::Forward), ask(Heading::Backward));
+            let (fwd, bwd) = (fwd.status, bwd.status);
             let mut coords: Vec<[f64; 2]> = seg.geometry().0.iter().map(|c| [c.x, c.y]).collect();
             let no = |s: Status| s == Status::Denied;
             let kind = match (no(fwd), no(bwd)) {

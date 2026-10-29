@@ -69,7 +69,8 @@ screen against the data. `just check` adds formatting and lints.
 
 Each move is checked like this:
 
-- **Access:** `overrules::resolve` at three points along the stretch.
+- **Access:** `overrules::resolve` at three points along the stretch and in every interval
+  between access-rule boundaries, so short closures are checked too.
 - **Turns:** the `prohibited_transitions` of the last few roads, matched against the steps
   taken, including multi-step sequences.
 - **Speed:** the winning speed-limit rule.
