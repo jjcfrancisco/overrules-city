@@ -65,6 +65,9 @@ button, select { font: inherit; }
 .nav .group { display: inline-flex; align-items: baseline; }
 .nav .clock { font-family: var(--font-display); font-weight: 900; font-size: 20px; letter-spacing: .06em; }
 .nav .clock #clock-day { color: var(--z-mute); }
+.nav .links { gap: 12px; align-items: center; }
+.nav .links a { color: var(--z-mute); display: inline-flex; }
+.nav .links a:hover { color: var(--z-ink); }
 
 /* ---------- panels ---------- */
 .panel {
